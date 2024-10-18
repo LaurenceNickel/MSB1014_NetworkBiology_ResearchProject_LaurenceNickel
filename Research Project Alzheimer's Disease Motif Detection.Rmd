@@ -1,0 +1,572 @@
+---
+title: "Research Project Alzheimer's Disease Motif Detection"
+author: "Laurence Nickel"
+date: "2024-10-10"
+output: html_document
+---
+
+## Install RCy3
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+install.packages("dplyr")
+BiocManager::install("RCy3")
+```
+```{r}
+library(RCy3)
+library(dplyr)
+library(stringr)
+```
+
+
+## Connect R to Cytoscape
+```{r}
+cytoscapePing()
+getNetworkList()
+```
+
+
+## Remove non-identifiable DEGs - Entorhinal Cortex
+```{r}
+setCurrentNetwork("GSE48350 Entorhinal Cortex - DEGs")
+
+# Retrieve only the genes with non-empty gene symbols.
+entorhinal_cortex_DEGs_node_table <- getTableColumns(table = "node")
+entorhinal_cortex_DEGs_node_table_identifiable <- subset(entorhinal_cortex_DEGs_node_table, Gene.symbol != "")
+entorhinal_cortex_DEGs_node_table_identifiable <- entorhinal_cortex_DEGs_node_table_identifiable[, !names(entorhinal_cortex_DEGs_node_table_identifiable) %in% c("shared name", "shared.name", "shared.name.1", "shared.name.2", "shared.name.3", "shared.name.4", "shared.name.5")]
+
+
+# Aggregate the duplicated genes (same gene symbols).
+duplicates <- unique(entorhinal_cortex_DEGs_node_table_identifiable$Gene.symbol[duplicated(entorhinal_cortex_DEGs_node_table_identifiable$Gene.symbol) | duplicated(entorhinal_cortex_DEGs_node_table_identifiable$Gene.symbol, fromLast = TRUE)])
+for (duplicate in duplicates) {
+  duplicate = duplicates[1]
+  duplicate_rows <- entorhinal_cortex_DEGs_node_table_identifiable[entorhinal_cortex_DEGs_node_table_identifiable$Gene.symbol == duplicate, ]
+  mean_log_fold_change <- mean(duplicate_rows[, "logFC"])
+  max_adj_P_Val <- max(duplicate_rows[, "adj.P.Val"])
+  max_P_Value <- max(duplicate_rows[, "P.Value"])
+  for (i in 1:nrow(duplicate_rows)) {
+    if (i != 1) {
+      entorhinal_cortex_DEGs_node_table_identifiable <- entorhinal_cortex_DEGs_node_table_identifiable[entorhinal_cortex_DEGs_node_table_identifiable$SUID != duplicate_rows[i, "SUID"], ]
+    }
+  }
+  entorhinal_cortex_DEGs_node_table_identifiable[entorhinal_cortex_DEGs_node_table_identifiable$Gene.symbol == duplicate, c("adj.P.Val", "B", "logFC", "P.Value", "t")] <- list(max_adj_P_Val, NA, mean_log_fold_change, max_P_Value, NA)
+}
+
+
+# Add a column featuring whether gene is a DEG.
+entorhinal_cortex_DEGs_node_table_identifiable$is_DEG <- TRUE
+
+
+# Creating a network of the adjusted node table.
+createNetworkFromDataFrames(nodes = entorhinal_cortex_DEGs_node_table_identifiable, node.id.list = "Gene.symbol", edges = NULL, title = "GSE48350 Entorhinal Cortex - Identifiable DEGs", collection = "GSE48350 Networks Identifiable DEGs")
+```
+
+
+## Remove non-identifiable DEGs - Hippocampus
+```{r}
+setCurrentNetwork("GSE48350 Hippocampus - DEGs")
+
+# Retrieve only the genes with non-empty gene symbols.
+hippocampus_DEGs_node_table <- getTableColumns(table = "node")
+hippocampus_DEGs_node_table_identifiable <- subset(hippocampus_DEGs_node_table, Gene.symbol != "")
+hippocampus_DEGs_node_table_identifiable <- hippocampus_DEGs_node_table_identifiable[, !names(hippocampus_DEGs_node_table_identifiable) %in% c("shared name", "shared.name", "shared.name.1", "shared.name.2", "shared.name.3", "shared.name.4", "shared.name.5")]
+
+
+# Aggregate the duplicated genes (same gene symbols).
+duplicates <- unique(hippocampus_DEGs_node_table_identifiable$Gene.symbol[duplicated(hippocampus_DEGs_node_table_identifiable$Gene.symbol) | duplicated(hippocampus_DEGs_node_table_identifiable$Gene.symbol, fromLast = TRUE)])
+for (duplicate in duplicates) {
+  duplicate = duplicates[1]
+  duplicate_rows <- hippocampus_DEGs_node_table_identifiable[hippocampus_DEGs_node_table_identifiable$Gene.symbol == duplicate, ]
+  mean_log_fold_change <- mean(duplicate_rows[, "logFC"])
+  max_adj_P_Val <- max(duplicate_rows[, "adj.P.Val"])
+  max_P_Value <- max(duplicate_rows[, "P.Value"])
+  for (i in 1:nrow(duplicate_rows)) {
+    if (i != 1) {
+      hippocampus_DEGs_node_table_identifiable <- hippocampus_DEGs_node_table_identifiable[hippocampus_DEGs_node_table_identifiable$SUID != duplicate_rows[i, "SUID"], ]
+    }
+  }
+  hippocampus_DEGs_node_table_identifiable[hippocampus_DEGs_node_table_identifiable$Gene.symbol == duplicate, c("adj.P.Val", "B", "logFC", "P.Value", "t")] <- list(max_adj_P_Val, NA, mean_log_fold_change, max_P_Value, NA)
+}
+
+
+# Add a column featuring whether gene is a DEG.
+hippocampus_DEGs_node_table_identifiable$is_DEG <- TRUE
+
+
+# Creating a network of the adjusted node table.
+createNetworkFromDataFrames(nodes = hippocampus_DEGs_node_table_identifiable, node.id.list = "Gene.symbol", edges = NULL, title = "GSE48350 Hippocampus - Identifiable DEGs", collection = "GSE48350 Networks Identifiable DEGs")
+```
+
+
+## Remove non-identifiable DEGs - Post-Central Gyrus
+```{r}
+setCurrentNetwork("GSE48350 Post-Central Gyrus - DEGs")
+
+# Retrieve only the genes with non-empty gene symbols.
+post_central_gyrus_DEGs_node_table <- getTableColumns(table = "node")
+post_central_gyrus_DEGs_node_table_identifiable <- subset(post_central_gyrus_DEGs_node_table, Gene.symbol != "")
+post_central_gyrus_DEGs_node_table_identifiable <- post_central_gyrus_DEGs_node_table_identifiable[, !names(post_central_gyrus_DEGs_node_table_identifiable) %in% c("shared name", "shared.name", "shared.name.1", "shared.name.2", "shared.name.3", "shared.name.4", "shared.name.5")]
+
+
+# Aggregate the duplicated genes (same gene symbols).
+duplicates <- unique(post_central_gyrus_DEGs_node_table_identifiable$Gene.symbol[duplicated(post_central_gyrus_DEGs_node_table_identifiable$Gene.symbol) | duplicated(post_central_gyrus_DEGs_node_table_identifiable$Gene.symbol, fromLast = TRUE)])
+for (duplicate in duplicates) {
+  duplicate = duplicates[1]
+  duplicate_rows <- post_central_gyrus_DEGs_node_table_identifiable[post_central_gyrus_DEGs_node_table_identifiable$Gene.symbol == duplicate, ]
+  mean_log_fold_change <- mean(duplicate_rows[, "logFC"])
+  max_adj_P_Val <- max(duplicate_rows[, "adj.P.Val"])
+  max_P_Value <- max(duplicate_rows[, "P.Value"])
+  for (i in 1:nrow(duplicate_rows)) {
+    if (i != 1) {
+      post_central_gyrus_DEGs_node_table_identifiable <- post_central_gyrus_DEGs_node_table_identifiable[post_central_gyrus_DEGs_node_table_identifiable$SUID != duplicate_rows[i, "SUID"], ]
+    }
+  }
+  post_central_gyrus_DEGs_node_table_identifiable[post_central_gyrus_DEGs_node_table_identifiable$Gene.symbol == duplicate, c("adj.P.Val", "B", "logFC", "P.Value", "t")] <- list(max_adj_P_Val, NA, mean_log_fold_change, max_P_Value, NA)
+}
+
+
+# Add a column featuring whether gene is a DEG.
+post_central_gyrus_DEGs_node_table_identifiable$is_DEG <- TRUE
+
+
+# Creating a network of the adjusted node table.
+createNetworkFromDataFrames(nodes = post_central_gyrus_DEGs_node_table_identifiable, node.id.list = "Gene.symbol", edges = NULL, title = "GSE48350 Post-Central Gyrus - Identifiable DEGs", collection = "GSE48350 Networks Identifiable DEGs")
+```
+
+
+## Remove non-identifiable DEGs - Superior Frontal Gyrus
+```{r}
+setCurrentNetwork("GSE48350 Superior Frontal Gyrus - DEGs")
+
+# Retrieve only the genes with non-empty gene symbols.
+superior_frontal_gyrus_DEGs_node_table <- getTableColumns(table = "node")
+superior_frontal_gyrus_DEGs_node_table_identifiable <- subset(superior_frontal_gyrus_DEGs_node_table, Gene.symbol != "")
+superior_frontal_gyrus_DEGs_node_table_identifiable <- superior_frontal_gyrus_DEGs_node_table_identifiable[, !names(superior_frontal_gyrus_DEGs_node_table_identifiable) %in% c("shared name", "shared.name", "shared.name.1", "shared.name.2", "shared.name.3", "shared.name.4", "shared.name.5")]
+
+
+# Aggregate the duplicated genes (same gene symbols).
+duplicates <- unique(superior_frontal_gyrus_DEGs_node_table_identifiable$Gene.symbol[duplicated(superior_frontal_gyrus_DEGs_node_table_identifiable$Gene.symbol) | duplicated(superior_frontal_gyrus_DEGs_node_table_identifiable$Gene.symbol, fromLast = TRUE)])
+for (duplicate in duplicates) {
+  duplicate = duplicates[1]
+  duplicate_rows <- superior_frontal_gyrus_DEGs_node_table_identifiable[superior_frontal_gyrus_DEGs_node_table_identifiable$Gene.symbol == duplicate, ]
+  mean_log_fold_change <- mean(duplicate_rows[, "logFC"])
+  max_adj_P_Val <- max(duplicate_rows[, "adj.P.Val"])
+  max_P_Value <- max(duplicate_rows[, "P.Value"])
+  for (i in 1:nrow(duplicate_rows)) {
+    if (i != 1) {
+      superior_frontal_gyrus_DEGs_node_table_identifiable <- superior_frontal_gyrus_DEGs_node_table_identifiable[superior_frontal_gyrus_DEGs_node_table_identifiable$SUID != duplicate_rows[i, "SUID"], ]
+    }
+  }
+  superior_frontal_gyrus_DEGs_node_table_identifiable[superior_frontal_gyrus_DEGs_node_table_identifiable$Gene.symbol == duplicate, c("adj.P.Val", "B", "logFC", "P.Value", "t")] <- list(max_adj_P_Val, NA, mean_log_fold_change, max_P_Value, NA)
+}
+
+
+# Add a column featuring whether gene is a DEG.
+superior_frontal_gyrus_DEGs_node_table_identifiable$is_DEG <- TRUE
+
+
+# Creating a network of the adjusted node table.
+createNetworkFromDataFrames(nodes = superior_frontal_gyrus_DEGs_node_table_identifiable, node.id.list = "Gene.symbol", edges = NULL, title = "GSE48350 Superior Frontal Gyrus - Identifiable DEGs", collection = "GSE48350 Networks Identifiable DEGs")
+```
+
+
+
+## Adding information columns to TTRUST TF-Target Interactions Human
+```{r}
+setCurrentNetwork("TRRUST TF-Target Interactions Human")
+
+# Retrieving all the transcription factors present in the TF-Target Interactions network.
+TF_Target_interactions_edge_table <- getTableColumns(table = "edge")
+transcription_factors <- unique(str_extract(TF_Target_interactions_edge_table$name, "\\b\\w+$"))
+
+# Retrieving all the targets present in the TF-Target Interactions network.
+TF_Target_interactions_node_table <- getTableColumns(table = "node")
+all_TF_Target_nodes <- unique(TF_Target_interactions_node_table$name)
+targets <- all_TF_Target_nodes[!all_TF_Target_nodes %in% transcription_factors]
+
+# Adding a column featuring whether gene is a transcription factor.
+transcription_factors <- transcription_factors[!transcription_factors %in% transcription_factors[!transcription_factors %in% all_TF_Target_nodes]]
+TF_Target_interactions_node_table$is_transcription_factor <- TF_Target_interactions_node_table$name %in% transcription_factors
+
+# Adding a column featuring whether gene is a target.
+targets <- targets[!targets %in% targets[!targets %in% all_TF_Target_nodes]]
+TF_Target_interactions_node_table$is_target <- TF_Target_interactions_node_table$name %in% targets
+
+# Loading the adjusted node table into the currently loaded network.
+loadTableData(TF_Target_interactions_node_table, data.key.column = "name", table = "node", table.key.column = "shared name")
+```
+
+
+
+## Merging the Identifiable Genes Networks and the TTRUST TF-Target Interactions Human Network
+The following steps were performed in Cytoscape for each of the four Identifiable Genes Networks. First, the 'Merge' function was applied to obtain the union of all nodes and edges between the Identifiable Genes Network and the TF-Target Interactions Network. Next, a selection was made to only obtain the nodes (and corresponding edges) that correspond to the DEGs (which includes both differentially expressed targets and transcription factors) and their neighbors. These neighbors were included such that also transcription factors that are not differentially expressed but do regulate DEGs and targets that are not differentially expressed but are regulated by a differentially expressed transcription factor are considered for the final network as these are still part of affected regulatory circuits. From this selection of nodes and edges, the final network was constructed to which in the next section additional information will be added such that each node and edge can be styled appropriately.
+
+
+
+## Adding information columns to TF-Target Network Entorhinal Cortex
+```{r}
+setCurrentNetwork("TF-Target Network Entorhinal Cortex - Connected DEGs and Neighbors")
+TF_Target_entorhinal_cortex_node_table <- getTableColumns(table = "node")
+
+# Adjusting whether gene is a DEG.
+TF_Target_entorhinal_cortex_node_table$is_DEG[is.na(TF_Target_entorhinal_cortex_node_table$is_DEG)] <- FALSE
+
+# Adding a column featuring whether gene is a transcription factor.
+TF_Target_entorhinal_cortex_node_table$is_transcription_factor <- TF_Target_entorhinal_cortex_node_table$"shared name" %in% transcription_factors
+
+# Adding a column featuring whether gene is a target.
+TF_Target_entorhinal_cortex_node_table$is_target <- TF_Target_entorhinal_cortex_node_table$"shared name" %in% targets
+
+# Loading the adjusted node table into the currently loaded network.
+loadTableData(TF_Target_entorhinal_cortex_node_table, data.key.column = "name", table = "node", table.key.column = "name")
+```
+
+
+## Adding information columns to TF-Target Network Hippocampus
+```{r}
+setCurrentNetwork("TF-Target Network Hippocampus - Connected DEGs and Neighbors")
+TF_Target_hippocampus_node_table <- getTableColumns(table = "node")
+
+# Adjusting whether gene is a DEG.
+TF_Target_hippocampus_node_table$is_DEG[is.na(TF_Target_hippocampus_node_table$is_DEG)] <- FALSE
+
+# Adding a column featuring whether gene is a transcription factor.
+TF_Target_hippocampus_node_table$is_transcription_factor <- TF_Target_hippocampus_node_table$"shared name" %in% transcription_factors
+
+# Adding a column featuring whether gene is a target.
+TF_Target_hippocampus_node_table$is_target <- TF_Target_hippocampus_node_table$"shared name" %in% targets
+
+# Loading the adjusted node table into the currently loaded network.
+loadTableData(TF_Target_hippocampus_node_table, data.key.column = "name", table = "node", table.key.column = "name")
+```
+
+
+## Adding information columns to TF-Target Network Post-Central Gyrus
+```{r}
+setCurrentNetwork("TF-Target Network Post-Central Gyrus - Connected DEGs and Neighbors")
+TF_Target_post_central_gyrus_node_table <- getTableColumns(table = "node")
+
+# Adjusting whether gene is a DEG.
+TF_Target_post_central_gyrus_node_table$is_DEG[is.na(TF_Target_post_central_gyrus_node_table$is_DEG)] <- FALSE
+
+# Adding a column featuring whether gene is a transcription factor.
+TF_Target_post_central_gyrus_node_table$is_transcription_factor <- TF_Target_post_central_gyrus_node_table$"shared name" %in% transcription_factors
+
+# Adding a column featuring whether gene is a target.
+TF_Target_post_central_gyrus_node_table$is_target <- TF_Target_post_central_gyrus_node_table$"shared name" %in% targets
+
+# Loading the adjusted node table into the currently loaded network.
+loadTableData(TF_Target_post_central_gyrus_node_table, data.key.column = "name", table = "node", table.key.column = "name")
+```
+
+
+## Adding information columns to TF-Target Network Superior Frontal Gyrus
+```{r}
+setCurrentNetwork("TF-Target Network Superior Frontal Gyrus - Connected DEGs and Neighbors")
+TF_Target_superior_frontal_gyrus_node_table <- getTableColumns(table = "node")
+
+# Adjusting whether gene is a DEG.
+TF_Target_superior_frontal_gyrus_node_table$is_DEG[is.na(TF_Target_superior_frontal_gyrus_node_table$is_DEG)] <- FALSE
+
+# Adding a column featuring whether gene is a transcription factor.
+TF_Target_superior_frontal_gyrus_node_table$is_transcription_factor <- TF_Target_superior_frontal_gyrus_node_table$"shared name" %in% transcription_factors
+
+# Adding a column featuring whether gene is a target.
+TF_Target_superior_frontal_gyrus_node_table$is_target <- TF_Target_superior_frontal_gyrus_node_table$"shared name" %in% targets
+
+# Loading the adjusted node table into the currently loaded network.
+loadTableData(TF_Target_superior_frontal_gyrus_node_table, data.key.column = "name", table = "node", table.key.column = "name")
+```
+
+
+
+## Network Analysis: TF-Target Network Entorhinal Cortex
+```{r}
+# Analyzing the network.
+commandsRun(paste("analyzer analyze network=", "TF-Target Network Entorhinal Cortex - Connected DEGs and Neighbors", " directed=true", sep=""))
+
+# Loading the TF-Target Network Entorhinal Cortex.
+setCurrentNetwork("TF-Target Network Entorhinal Cortex - Connected DEGs and Neighbors")
+TF_Target_entorhinal_cortex_node_table <- getTableColumns(table = "node")
+TF_Target_entorhinal_cortex_edge_table <- getTableColumns(table = "edge")
+
+# Obtaining information about the transcription factors and DEGs.
+EC_number_of_nodes <- nrow(TF_Target_entorhinal_cortex_node_table)
+EC_number_of_DEGs <- sum(TF_Target_entorhinal_cortex_node_table$is_DEG)
+EC_number_of_transcription_factors <- sum(TF_Target_entorhinal_cortex_node_table$is_transcription_factor)
+EC_number_of_DEGs_transcription_factors <- sum(TF_Target_entorhinal_cortex_node_table$is_DEG & TF_Target_entorhinal_cortex_node_table$is_transcription_factor)
+EC_prop_transcription_factors_of_DEGs <- EC_number_of_DEGs_transcription_factors / EC_number_of_DEGs
+EC_included_transcription_factors <- TF_Target_entorhinal_cortex_node_table$"shared name"[TF_Target_entorhinal_cortex_node_table$is_transcription_factor]
+EC_included_DEGs <- TF_Target_entorhinal_cortex_node_table$"shared name"[TF_Target_entorhinal_cortex_node_table$is_DEG]
+
+# Plotting the in-, out-, and total-degree distributions.
+EC_vectors_for_in_degrees <- str_extract(TF_Target_entorhinal_cortex_edge_table$name, "^\\w+")
+EC_vectors_for_out_degrees <- str_extract(TF_Target_entorhinal_cortex_edge_table$name, "\\b\\w+$")
+EC_combined_vector_degrees <- c(EC_vectors_for_in_degrees, EC_vectors_for_out_degrees)
+EC_genes_in_degrees <- table(EC_vectors_for_in_degrees)
+EC_genes_out_degrees <- table(EC_vectors_for_out_degrees)
+EC_genes_degrees <- table(EC_combined_vector_degrees)
+hist(EC_genes_in_degrees, breaks = length(unique(EC_genes_in_degrees)), col = "lightblue",
+     main = "Entorhinal Cortex Network: In-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(EC_genes_out_degrees, breaks = length(unique(EC_genes_out_degrees)), col = "lightblue",
+     main = "Entorhinal Cortex Network: Out-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(EC_genes_degrees, breaks = length(unique(EC_genes_degrees)), col = "lightblue",
+     main = "Entorhinal Cortex Network: Total Degree Distribution", xlab = "Degree", ylab = "Frequency")
+```
+
+
+## Network Analysis: TF-Target Network Hippocampus
+```{r}
+# Analyzing the network.
+commandsRun(paste("analyzer analyze network=", "TF-Target Network Hippocampus - Connected DEGs and Neighbors", " directed=true", sep=""))
+
+# Loading the TF-Target Network Hippocampus.
+setCurrentNetwork("TF-Target Network Hippocampus - Connected DEGs and Neighbors")
+TF_Target_hippocampus_node_table <- getTableColumns(table = "node")
+TF_Target_hippocampus_edge_table <- getTableColumns(table = "edge")
+
+# Obtaining information about the transcription factors and DEGs.
+HC_number_of_nodes <- nrow(TF_Target_hippocampus_node_table)
+HC_number_of_DEGs <- sum(TF_Target_hippocampus_node_table$is_DEG)
+HC_number_of_transcription_factors <- sum(TF_Target_hippocampus_node_table$is_transcription_factor)
+HC_number_of_DEGs_transcription_factors <- sum(TF_Target_hippocampus_node_table$is_DEG & TF_Target_hippocampus_node_table$is_transcription_factor)
+HC_prop_transcription_factors_of_DEGs <- HC_number_of_DEGs_transcription_factors / HC_number_of_DEGs
+HC_included_transcription_factors <- TF_Target_hippocampus_node_table$"shared name"[TF_Target_hippocampus_node_table$is_transcription_factor]
+HC_included_DEGs <- TF_Target_hippocampus_node_table$"shared name"[TF_Target_hippocampus_node_table$is_DEG]
+
+# Plotting the in-, out-, and total-degree distributions.
+HC_vectors_for_in_degrees <- str_extract(TF_Target_hippocampus_edge_table$name, "^\\w+")
+HC_vectors_for_out_degrees <- str_extract(TF_Target_hippocampus_edge_table$name, "\\b\\w+$")
+HC_combined_vector_degrees <- c(HC_vectors_for_in_degrees, HC_vectors_for_out_degrees)
+HC_genes_in_degrees <- table(HC_vectors_for_in_degrees)
+HC_genes_out_degrees <- table(HC_vectors_for_out_degrees)
+HC_genes_degrees <- table(HC_combined_vector_degrees)
+hist(HC_genes_in_degrees, breaks = length(unique(HC_genes_in_degrees)), col = "lightblue",
+     main = "Hippocampus Network: In-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(HC_genes_out_degrees, breaks = length(unique(HC_genes_out_degrees)), col = "lightblue",
+     main = "Hippocampus Network: Out-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(HC_genes_degrees, breaks = length(unique(HC_genes_degrees)), col = "lightblue",
+     main = "Hippocampus Network: Total Degree Distribution", xlab = "Degree", ylab = "Frequency")
+```
+
+
+## Network Analysis: TF-Target Network Post-Central Gyrus
+```{r}
+# Analyzing the network.
+commandsRun(paste("analyzer analyze network=", "TF-Target Network Post-Central Gyrus - Connected DEGs and Neighbors", " directed=true", sep=""))
+
+# Loading the TF-Target Network Post-Central Gyrus.
+setCurrentNetwork("TF-Target Network Post-Central Gyrus - Connected DEGs and Neighbors")
+TF_Target_post_central_gyrus_node_table <- getTableColumns(table = "node")
+TF_Target_post_central_gyrus_edge_table <- getTableColumns(table = "edge")
+
+# Obtaining information about the transcription factors and DEGs.
+PCG_number_of_nodes <- nrow(TF_Target_post_central_gyrus_node_table)
+PCG_number_of_DEGs <- sum(TF_Target_post_central_gyrus_node_table$is_DEG)
+PCG_number_of_transcription_factors <- sum(TF_Target_post_central_gyrus_node_table$is_transcription_factor)
+PCG_number_of_DEGs_transcription_factors <- sum(TF_Target_post_central_gyrus_node_table$is_DEG & TF_Target_post_central_gyrus_node_table$is_transcription_factor)
+PCG_prop_transcription_factors_of_DEGs <- PCG_number_of_DEGs_transcription_factors / PCG_number_of_DEGs
+PCG_included_transcription_factors <- TF_Target_post_central_gyrus_node_table$"shared name"[TF_Target_post_central_gyrus_node_table$is_transcription_factor]
+PCG_included_DEGs <- TF_Target_post_central_gyrus_node_table$"shared name"[TF_Target_post_central_gyrus_node_table$is_DEG]
+
+# Plotting the in-, out-, and total-degree distributions.
+PCG_vectors_for_in_degrees <- str_extract(TF_Target_post_central_gyrus_edge_table$name, "^\\w+")
+PCG_vectors_for_out_degrees <- str_extract(TF_Target_post_central_gyrus_edge_table$name, "\\b\\w+$")
+PCG_combined_vector_degrees <- c(PCG_vectors_for_in_degrees, PCG_vectors_for_out_degrees)
+PCG_genes_in_degrees <- table(PCG_vectors_for_in_degrees)
+PCG_genes_out_degrees <- table(PCG_vectors_for_out_degrees)
+PCG_genes_degrees <- table(PCG_combined_vector_degrees)
+hist(PCG_genes_in_degrees, breaks = length(unique(PCG_genes_in_degrees)), col = "lightblue",
+     main = "Post-Central Gyrus Network: In-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(PCG_genes_out_degrees, breaks = length(unique(PCG_genes_out_degrees)), col = "lightblue",
+     main = "Post-Central Gyrus Network: Out-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(PCG_genes_degrees, breaks = length(unique(PCG_genes_degrees)), col = "lightblue",
+     main = "Post-Central Gyrus Network: Total Degree Distribution", xlab = "Degree", ylab = "Frequency")
+```
+
+
+## Network Analysis: TF-Target Network Superior Frontal Gyrus
+```{r}
+# Analyzing the network.
+commandsRun(paste("analyzer analyze network=", "TF-Target Network Superior Frontal Gyrus - Connected DEGs and Neighbors", " directed=true", sep=""))
+
+# Loading the TF-Target Network Superior Frontal Gyrus.
+setCurrentNetwork("TF-Target Network Superior Frontal Gyrus - Connected DEGs and Neighbors")
+TF_Target_superior_frontal_gyrus_node_table <- getTableColumns(table = "node")
+TF_Target_superior_frontal_gyrus_edge_table <- getTableColumns(table = "edge")
+
+# Obtaining information about the transcription factors and DEGs.
+SFG_number_of_nodes <- nrow(TF_Target_superior_frontal_gyrus_node_table)
+SFG_number_of_DEGs <- sum(TF_Target_superior_frontal_gyrus_node_table$is_DEG)
+SFG_number_of_transcription_factors <- sum(TF_Target_superior_frontal_gyrus_node_table$is_transcription_factor)
+SFG_number_of_DEGs_transcription_factors <- sum(TF_Target_superior_frontal_gyrus_node_table$is_DEG & TF_Target_superior_frontal_gyrus_node_table$is_transcription_factor)
+SFG_prop_transcription_factors_of_DEGs <- SFG_number_of_DEGs_transcription_factors / SFG_number_of_DEGs
+SFG_included_transcription_factors <- TF_Target_superior_frontal_gyrus_node_table$"shared name"[TF_Target_superior_frontal_gyrus_node_table$is_transcription_factor]
+SFG_included_DEGs <- TF_Target_superior_frontal_gyrus_node_table$"shared name"[TF_Target_superior_frontal_gyrus_node_table$is_DEG]
+
+# Plotting the in-, out-, and total-degree distributions.
+SFG_vectors_for_in_degrees <- str_extract(TF_Target_superior_frontal_gyrus_edge_table$name, "^\\w+")
+SFG_vectors_for_out_degrees <- str_extract(TF_Target_superior_frontal_gyrus_edge_table$name, "\\b\\w+$")
+SFG_combined_vector_degrees <- c(SFG_vectors_for_in_degrees, SFG_vectors_for_out_degrees)
+SFG_genes_in_degrees <- table(SFG_vectors_for_in_degrees)
+SFG_genes_out_degrees <- table(SFG_vectors_for_out_degrees)
+SFG_genes_degrees <- table(SFG_combined_vector_degrees)
+hist(SFG_genes_in_degrees, breaks = length(unique(SFG_genes_in_degrees)), col = "lightblue",
+     main = "Superior Frontal Gyrus Network: In-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(SFG_genes_out_degrees, breaks = length(unique(SFG_genes_out_degrees)), col = "lightblue",
+     main = "Superior Frontal Gyrus Network: Out-Degree Distribution", xlab = "Degree", ylab = "Frequency")
+hist(SFG_genes_degrees, breaks = length(unique(SFG_genes_degrees)), col = "lightblue",
+     main = "Superior Frontal Gyrus Network: Total Degree Distribution", xlab = "Degree", ylab = "Frequency")
+```
+
+
+
+## Comparing DEGs and transcription factors across the TF-Target Networks
+```{r}
+# Obtaining how similar the sets of DEGs across the TF-Target Networks are.
+EC_HC_num_of_common_DEGs <- length(intersect(EC_included_DEGs, HC_included_DEGs))
+EC_PCG_num_of_common_DEGs <- length(intersect(EC_included_DEGs, PCG_included_DEGs))
+EC_SFG_num_of_common_DEGs <- length(intersect(EC_included_DEGs, SFG_included_DEGs))
+HC_PCG_num_of_common_DEGs <- length(intersect(HC_included_DEGs, PCG_included_DEGs))
+HC_SFG_num_of_common_DEGs <- length(intersect(HC_included_DEGs, SFG_included_DEGs))
+PCG_SFG_num_of_common_DEGs <- length(intersect(PCG_included_DEGs, SFG_included_DEGs))
+
+# Obtaining how similar the sets of transcription factors across the TF-Target Networks are.
+EC_HC_num_of_common_transcription_factors <- length(intersect(EC_included_transcription_factors, HC_included_transcription_factors))
+EC_PCG_num_of_common_transcription_factors <- length(intersect(EC_included_transcription_factors, PCG_included_transcription_factors))
+EC_SFG_num_of_common_transcription_factors <- length(intersect(EC_included_transcription_factors, SFG_included_transcription_factors))
+HC_PCG_num_of_common_transcription_factors <- length(intersect(HC_included_transcription_factors, PCG_included_transcription_factors))
+HC_SFG_num_of_common_transcription_factors <- length(intersect(HC_included_transcription_factors, SFG_included_transcription_factors))
+PCG_SFG_num_of_common_transcription_factors <- length(intersect(PCG_included_transcription_factors, SFG_included_transcription_factors))
+```
+
+
+
+## Performing Motif Detection Analysis
+After having obtained all the final TF-target networks and having analyzed them, motif detection was applied on each of them by using the tool 'Motif-Discovery' in Cytoscape. Here, all counts of motifs of size 3 and 4 together with their significance score resulting from running 200 random networks to determine whether the motif appears more often than would be expected by chance were retrieved. The resulting counts for a subset of these motifs is presented in the report. From the next section onwards, I have decided to focus on a motif of size 3 called 'Feed-Forward Loop'. 
+
+
+
+## Cleaning the Resulting Motif Files
+```{r}
+# Defining the function to process each line such that all entries correspond to gene names.
+remove_at_entries <- function(line) {
+  entries <- unlist(strsplit(line, ";"))
+  clean_entries <- entries[!grepl("_at", entries)]
+  return(paste(clean_entries, collapse = ";"))
+}
+
+
+# Cleaning the 'Entorhinal Cortex - Feed-Forward Loop.txt' file.
+lines <- readLines('Entorhinal Cortex - Feed-Forward Loop.txt')
+cleaned_lines <- sapply(lines, remove_at_entries)
+writeLines(cleaned_lines, 'Entorhinal Cortex - Feed-Forward Loop - Cleaned.txt')
+
+# Cleaning the 'Hippocampus - Feed-Forward Loop.txt' file.
+lines <- readLines('Hippocampus - Feed-Forward Loop.txt')
+cleaned_lines <- sapply(lines, remove_at_entries)
+writeLines(cleaned_lines, 'Hippocampus - Feed-Forward Loop - Cleaned.txt')
+
+# Cleaning the 'Post-Central Gyrus - Feed-Forward Loop.txt' file.
+lines <- readLines('Post-Central Gyrus - Feed-Forward Loop.txt')
+cleaned_lines <- sapply(lines, remove_at_entries)
+writeLines(cleaned_lines, 'Post-Central Gyrus - Feed-Forward Loop - Cleaned.txt')
+
+# Cleaning the 'Superior Frontal Gyrus - Feed-Forward Loop.txt' file.
+lines <- readLines('Superior Frontal Gyrus - Feed-Forward Loop.txt')
+cleaned_lines <- sapply(lines, remove_at_entries)
+writeLines(cleaned_lines, 'Superior Frontal Gyrus - Feed-Forward Loop - Cleaned.txt')
+```
+
+
+
+## Focusing on 5 Feed-Forward Loop Motifs Per Network
+```{r}
+# Defining the function to retrieve the n feed-forward loop motifs from the networks featuring the transcription factors with the highest combined absolute fold change.
+retrieve_top_n_motifs <- function(feed_forward_motifs, TF_Target_network_node_table, n) {
+  feed_forward_motifs$absolute_log_fold_change_TFs <- NA
+  for (i in 1:nrow(feed_forward_motifs)) {
+    sum_of_fold_change <- 0
+    for (j in 1:(ncol(feed_forward_motifs)-1)) {
+      gene <- feed_forward_motifs[i,j]
+      is_gene_DEG <- TF_Target_network_node_table[TF_Target_network_node_table[, "shared name"] == gene, ]$is_DEG
+      is_gene_TF <- TF_Target_network_node_table[TF_Target_network_node_table[, "shared name"] == gene, ]$is_transcription_factor
+      if (is_gene_DEG & is_gene_TF) {
+        gene_logFC <- abs(TF_Target_network_node_table[TF_Target_network_node_table[, "shared name"] == gene, ]$logFC)
+        sum_of_fold_change <- sum_of_fold_change + gene_logFC
+      }
+    }
+    feed_forward_motifs[i, "absolute_log_fold_change_TFs"] <- sum_of_fold_change
+  }
+  
+  feed_forward_motifs <- feed_forward_motifs[order(feed_forward_motifs$absolute_log_fold_change_TFs, decreasing = TRUE), ]
+  selected_genes <- c()
+  for (i in 1:n) {
+    for (j in 1:(ncol(feed_forward_motifs)-1)) {
+      selected_genes <- append(selected_genes, feed_forward_motifs[i,j])
+    }
+  }
+
+  return(selected_genes)
+}
+
+
+## Entorhinal Cortex 
+# Loading the TF-Target Network Entorhinal Cortex.
+setCurrentNetwork("TF-Target Network Entorhinal Cortex - Connected DEGs and Neighbors")
+TF_Target_entorhinal_cortex_node_table <- getTableColumns(table = "node")
+
+# Loading the feed-forward motifs.
+EC_feed_forward_motifs <- read.csv('Entorhinal Cortex - Feed-Forward Loop - Cleaned.txt', header = FALSE, sep = ";", stringsAsFactors = FALSE)
+EC_selected_genes <- retrieve_top_n_motifs(EC_feed_forward_motifs, TF_Target_entorhinal_cortex_node_table, 10)
+
+# Selecting the nodes and corresponding edges between the nodes.
+selectNodes(EC_selected_genes, by.col = "shared name")
+selectEdgesConnectingSelectedNodes()
+createSubnetwork("TF-Target Network Entorhinal Cortex - 5 Feed-Forward Loop Motifs")
+
+
+## Hippocampus 
+# Loading the TF-Target Network Hippocampus.
+setCurrentNetwork("TF-Target Network Hippocampus - Connected DEGs and Neighbors")
+TF_Target_hippocampus_node_table <- getTableColumns(table = "node")
+
+# Loading the feed-forward motifs.
+HC_feed_forward_motifs <- read.csv('Hippocampus - Feed-Forward Loop - Cleaned.txt', header = FALSE, sep = ";", stringsAsFactors = FALSE)
+HC_selected_genes <- retrieve_top_n_motifs(HC_feed_forward_motifs, TF_Target_hippocampus_node_table, 5)
+
+# Selecting the nodes and corresponding edges between the nodes.
+selectNodes(HC_selected_genes, by.col = "shared name")
+selectEdgesConnectingSelectedNodes()
+createSubnetwork("TF-Target Network Hippocampus - 5 Feed-Forward Loop Motifs")
+
+
+## Post-Central Gyrus 
+# Loading the TF-Target Network Post-Central Gyrus.
+setCurrentNetwork("TF-Target Network Post-Central Gyrus - Connected DEGs and Neighbors")
+TF_Target_post_central_gyrus_node_table <- getTableColumns(table = "node")
+
+# Loading the feed-forward motifs.
+PCG_feed_forward_motifs <- read.csv('Post-Central Gyrus - Feed-Forward Loop - Cleaned.txt', header = FALSE, sep = ";", stringsAsFactors = FALSE)
+PCG_selected_genes <- retrieve_top_n_motifs(PCG_feed_forward_motifs, TF_Target_post_central_gyrus_node_table, 5)
+
+# Selecting the nodes and corresponding edges between the nodes.
+selectNodes(PCG_selected_genes, by.col = "shared name")
+selectEdgesConnectingSelectedNodes()
+createSubnetwork("TF-Target Network Post-Central Gyrus - 5 Feed-Forward Loop Motifs")
+
+
+## Superior Frontal Gyrus 
+# Loading the TF-Target Network Superior Frontal Gyrus.
+setCurrentNetwork("TF-Target Network Superior Frontal Gyrus - Connected DEGs and Neighbors")
+TF_Target_superior_frontal_gyrus_node_table <- getTableColumns(table = "node")
+
+# Loading the feed-forward motifs.
+SFG_feed_forward_motifs <- read.csv('Superior Frontal Gyrus - Feed-Forward Loop - Cleaned.txt', header = FALSE, sep = ";", stringsAsFactors = FALSE)
+SFG_selected_genes <- retrieve_top_n_motifs(SFG_feed_forward_motifs, TF_Target_superior_frontal_gyrus_node_table, 5)
+
+# Selecting the nodes and corresponding edges between the nodes.
+selectNodes(SFG_selected_genes, by.col = "shared name")
+selectEdgesConnectingSelectedNodes()
+createSubnetwork("TF-Target Network Superior Frontal Gyrus - 5 Feed-Forward Loop Motifs")
+```
